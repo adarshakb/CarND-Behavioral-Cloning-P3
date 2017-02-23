@@ -44,26 +44,17 @@ class SimplePIController:
 
 
 controller = SimplePIController(0.1, 0.002)
-set_speed = 9
+set_speed = 20
 controller.set_desired(set_speed)
 
 import sys
 sys.path.append('/Users/abadarinath/Applications/anaconda/envs/UdacityNanoCar/lib/python3.5/site-packages')
 import cv2
 import numpy as np
-def preprocessInputImage(img):
-    row,col = 64,64
-    img = cv2.imread(src,0)
-    img = cv2.cvtColor(cv2.imread(DATA_DIR+final_driving_log['imgSrc'][i]),cv2.COLOR_BGR2GRAY)
-    crop_img = img[60:125, 0:320]
-    img = cv2.resize(crop_img, (row,col))
-    #plt.figure(1)
-    #plt.imshow(img, cmap='gray')
-    #plt.show()
-    return np.reshape(img,(row,col,1))
 
 @sio.on('telemetry')
 def telemetry(sid, data):
+    # send_control(0.1,9)
     if data:
         # The current steering angle of the car
         steering_angle = data["steering_angle"]
@@ -73,21 +64,22 @@ def telemetry(sid, data):
         speed = data["speed"]
         # The current image from the center camera of the car
         imgString = data["image"]
-        image = Image.open(BytesIO(base64.b64decode(imgString))).convert('L').crop((0, 60, 320, 125)).resize((64,64))
-        image_array = np.reshape(np.asarray(image),(64,64,1))
+        originalImage = Image.open(BytesIO(base64.b64decode(imgString)))
+        image = originalImage.convert('RGB').crop((0, 50, 320, 125)).resize((32,32))
+        image_array = np.asarray(image)
         
         steering_angle = float(model.predict(image_array[None, :, :, :], batch_size=1))
 
         throttle = controller.update(float(speed))
 
-        # print(steering_angle, throttle)
+        print(steering_angle, throttle)
         send_control(steering_angle, throttle)
 
-        # # save frame
-        # if args.image_folder != '':
-        #     timestamp = datetime.utcnow().strftime('%Y_%m_%d_%H_%M_%S_%f')[:-3]
-        #     image_filename = os.path.join(args.image_folder, timestamp)
-        #     image.save('{}.jpg'.format(image_filename))
+        # save frame
+        if args.image_folder != '':
+            timestamp = datetime.utcnow().strftime('%Y_%m_%d_%H_%M_%S_%f')[:-3]
+            image_filename = os.path.join(args.image_folder, timestamp)
+            originalImage.save('{}.jpg'.format(image_filename))
     else:
         # NOTE: DON'T EDIT THIS.
         sio.emit('manual', data={}, skip_sid=True)
