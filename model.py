@@ -62,12 +62,14 @@ A Simpe model with lamda
 def getModel():
 	model = Sequential()
 	model.add(Lambda(lambda x: x/127.5 - 1., input_shape=(row,col,ch)))
+	model.add(Convolution2D(3, 2, 2))
 	model.add(Flatten())
 	model.add(Dense(512, activation='elu'))
 	model.add(Dropout(0.5))
 	model.add(Dense(1))
 
 	return model
+
 """
 The generator function to return Data in batches
 """
